@@ -65,6 +65,7 @@ The repository also retains its earlier evaluated skills:
 | [`run-agents-in-sbx`](skills/run-agents-in-sbx/SKILL.md) | Run Codex implementation tasks in `sbx` with explicit ownership, bounded execution, narrow ChatGPT-subscription authentication, evidence, and recovery. |
 | [`kafka-local-lab`](skills/kafka-local-lab/SKILL.md) | Create and smoke-test disposable Docker Compose Kafka labs, from Apache Kafka to Confluent services, Schema Registry, Kafka Connect, and AKHQ. |
 | [`kafka-architecture-investigation`](skills/kafka-architecture-investigation/SKILL.md) | Turn Kafka architecture questions into source-backed ADRs, deterministic scenarios, proof harnesses, evidence, reports, and runbooks. |
+| [`sharepoint-video-download`](skills/sharepoint-video-download/SKILL.md) | Save a local `.mp4` of a SharePoint / OneDrive / Stream / Teams recording the user can play, including view-only videos with no Download button, using their own signed-in browser session. |
 
 ## Key features
 
