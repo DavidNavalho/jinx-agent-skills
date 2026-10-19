@@ -66,6 +66,7 @@ The repository also retains its earlier evaluated skills:
 | [`kafka-local-lab`](skills/kafka-local-lab/SKILL.md) | Create and smoke-test disposable Docker Compose Kafka labs, from Apache Kafka to Confluent services, Schema Registry, Kafka Connect, and AKHQ. |
 | [`kafka-architecture-investigation`](skills/kafka-architecture-investigation/SKILL.md) | Turn Kafka architecture questions into source-backed ADRs, deterministic scenarios, proof harnesses, evidence, reports, and runbooks. |
 | [`sharepoint-video-download`](skills/sharepoint-video-download/SKILL.md) | Save a local `.mp4` of a SharePoint / OneDrive / Stream / Teams recording the user can play, including view-only videos with no Download button, using their own signed-in browser session. |
+| [`lucid-backup-converter`](skills/lucid-backup-converter/SKILL.md) | Convert a Lucidchart / Lucidspark backup (`.laf`) into its original folder tree, with an editable `.drawio`, a PDF and per-page PNGs for every document, using draw.io's open-source Lucid importer in headless Chrome. |
 
 ## Key features
 
@@ -222,3 +223,5 @@ See the [evaluation plan](evaluation/run-agents-in-sbx/evaluation-plan.md), [det
 This repository is [MIT licensed](LICENSE).
 
 It uses Docker `sbx`, Codex CLI, ChatGPT subscription authentication, Bash, Python, Git, JSON, and JSON Schema. The implemented authenticated provider path is Codex CLI with file-backed ChatGPT subscription auth; it is not the OpenAI API. Users are responsible for complying with all applicable third-party terms and licenses.
+
+The `lucid-backup-converter` skill downloads, at setup time, a pinned checkout of [draw.io](https://github.com/jgraph/drawio) (Apache-2.0) and [Playwright](https://github.com/microsoft/playwright) (Apache-2.0); neither is vendored in this repository.
