@@ -65,7 +65,9 @@ software is their call.
 python3 -I <skill>/scripts/extract_laf.py <backup.laf> <extracted-folder>
 ```
 
-This prints how many documents and pages there are. `index.csv` lists every document with its title,
+This prints how many documents and pages there are. Folders mirror Lucid's. If two sibling folders (or two
+documents in one folder) have the same name, later ones get ` (2)`, ` (3)`, … so nothing is merged.
+`index.csv` lists every document with its title,
 Lucid folder, type (`chart` = Lucidchart, `spark` = Lucidspark), created date and page/shape counts.
 Tell the user the totals. Page count is what drives conversion time.
 
@@ -93,8 +95,9 @@ node <skill>/scripts/convert.mjs --tools ~/.lucid-convert --in <extracted-folder
 - As a guide: 154 documents / 692 pages took about 7 minutes with `--concurrency 4` on a laptop
   (roughly 2 seconds per page per worker). Run it in the background for big backups and report progress
   from its output (`[n/total] ok <file> (pages, seconds)`).
-- It's **resumable**: finished documents get a `.converted` marker and are skipped on the next run,
-  so if it's interrupted, just run the same command again. `--force` redoes everything.
+- It's **resumable**: finished documents get a `.converted` marker, which also stores their page count and
+  warnings, and are skipped on the next run. If it's interrupted, just run the same command again. The
+  final report still includes what earlier runs found. `--force` redoes everything.
 - `--formats drawio,pdf` (for example) skips PNGs. `--scale 1` makes smaller PNGs.
 - Raise `--concurrency` on a strong machine. Lower it to 1 if Chrome runs out of memory on huge documents.
 

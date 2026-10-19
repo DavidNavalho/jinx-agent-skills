@@ -135,11 +135,16 @@ function watch(page, warnings) {
 
 async function openExportPage(viewport, warnings) {
   const page = await context.newPage();
-  if (warnings) watch(page, warnings);
-  if (viewport) await page.setViewportSize(viewport);
-  await page.goto(`${ORIGIN}/export3.html`);
-  await page.waitForFunction(() => typeof window.render === 'function' && typeof window.LucidImporter !== 'undefined');
-  return page;
+  try {
+    if (warnings) watch(page, warnings);
+    if (viewport) await page.setViewportSize(viewport);
+    await page.goto(`${ORIGIN}/export3.html`);
+    await page.waitForFunction(() => typeof window.render === 'function' && typeof window.LucidImporter !== 'undefined');
+    return page;
+  } catch (e) {
+    await page.close().catch(() => {});
+    throw e;
+  }
 }
 
 // render() is started from a timer rather than inside page.evaluate: for some documents, calling it
@@ -234,16 +239,38 @@ async function convert(file) {
   const rel = path.relative(IN, file);
   const base = path.basename(file, '.lcd');
   const dest = path.join(OUT, path.dirname(rel), base);
+  // The marker holds this document's result (pages, warnings), so a resumed run can still report
+  // what an earlier run found instead of losing it.
   const marker = path.join(dest, '.converted');
-  if (!args.force && fs.existsSync(marker)) return { file: rel, status: 'skipped' };
+  if (!args.force && fs.existsSync(marker)) {
+    let saved = {};
+    try { saved = JSON.parse(fs.readFileSync(marker, 'utf8')); } catch { /* marker from an older version */ }
+    return { ...saved, file: rel, status: 'skipped' };
+  }
 
   fs.mkdirSync(dest, { recursive: true });
   const warnings = [];
+  const pages = new Set();
+  try {
+    const result = await convertInto(file, rel, base, dest, warnings, async (viewport) => {
+      const p = await openExportPage(viewport, warnings);
+      pages.add(p);
+      return p;
+    });
+    fs.writeFileSync(marker, JSON.stringify({ ...result, converted: new Date().toISOString() }, null, 2));
+    return result;
+  } finally {
+    // A failed document must not leave loaded draw.io pages behind in the shared browser.
+    await Promise.all([...pages].map((p) => p.close().catch(() => {})));
+  }
+}
+
+async function convertInto(file, rel, base, dest, warnings, openPage) {
   const started = Date.now();
   const doc = preprocess(JSON.parse(fs.readFileSync(file, 'utf8')).Document);
 
   // 1. Lucid JSON -> draw.io XML
-  let page = await openExportPage(null, warnings);
+  let page = await openPage(null);
   const xml = await page.evaluate((d) => window.LucidImporter.importState(d), doc);
   if (!xml || !xml.includes('<diagram')) throw new Error('LucidImporter produced no diagram');
   const pageNames = await page.evaluate((x) =>
@@ -263,7 +290,7 @@ async function convert(file) {
   if (FORMATS.has('png')) {
     for (let i = 0; i < pageNames.length; i++) {
       const data = { xml, format: 'png', from: i, to: i, border: 20 };
-      page = await openExportPage(null, warnings);
+      page = await openPage(null);
       let { bounds } = await renderOn(page, data);
       await page.close();
       // Chrome can't capture images wider or taller than ~16384 px, and very large captures time
@@ -273,12 +300,12 @@ async function convert(file) {
       if (shrink < 1) {
         data.scale = shrink;
         warnings.push(`note: page ${i + 1} scaled to ${Math.round(data.scale * 100)}% to fit the PNG size limit`);
-        page = await openExportPage(null, warnings);
+        page = await openPage(null);
         ({ bounds } = await renderOn(page, data));
         await page.close();
       }
       const w = Math.max(Math.ceil(bounds.width), 1), h = Math.max(Math.ceil(bounds.height), 1);
-      page = await openExportPage({ width: w, height: h }, warnings);
+      page = await openPage({ width: w, height: h });
       await renderOn(page, data);
       const name = `${String(i + 1).padStart(2, '0')} ${safe(pageNames[i])}.png`;
       await page.screenshot({ path: path.join(dest, name), clip: { x: 0, y: 0, width: w, height: h }, timeout: 180000 });
@@ -286,7 +313,6 @@ async function convert(file) {
     }
   }
 
-  fs.writeFileSync(marker, new Date().toISOString());
   return { file: rel, status: 'ok', pages: pageNames.length, seconds: Math.round((Date.now() - started) / 1000),
     warnings: [...new Set(warnings)] };
 }

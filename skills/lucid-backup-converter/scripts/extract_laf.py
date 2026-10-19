@@ -31,6 +31,48 @@ def clean(name):
     return (name or 'Untitled')[:120]
 
 
+def assign_folder_paths(folders):
+    """Map each Lucid folder id to a unique list of on-disk path components.
+
+    Sibling folders can share a name, or have names that become identical once cleaned
+    ("A/B" and "A:B" both become "A_B"), or that differ only in case. Without care they'd
+    merge into one directory, so later siblings get " (2)", " (3)", ... in a stable order
+    (by folder id). "(root)" is reserved at the top level for documents outside any folder.
+    """
+    children = {}
+    for fid, f in folders.items():
+        parent = f.get('parentId') if f.get('parentId') in folders else None
+        children.setdefault(parent, []).append(fid)
+
+    paths = {}
+    used = {(): {'(root)'}}  # parent path -> lowercase names already taken there
+
+    def place(fid, parent_path):
+        taken = used.setdefault(parent_path, set())
+        base = clean(folders[fid]['name'])
+        name, n = base, 2
+        while name.lower() in taken:
+            name, n = f'{base} ({n})', n + 1
+        taken.add(name.lower())
+        paths[fid] = list(parent_path) + [name]
+        stack.append((fid, tuple(paths[fid])))
+
+    stack = []
+    for fid in sorted(children.get(None, [])):
+        place(fid, ())
+    while True:
+        while stack:
+            fid, path = stack.pop()
+            for child in sorted(children.get(fid, [])):
+                if child not in paths:
+                    place(child, path)
+        # Folders caught in a parent cycle are never reached from the top; put them there.
+        orphans = sorted(fid for fid in folders if fid not in paths)
+        if not orphans:
+            return paths
+        place(orphans[0], ())
+
+
 def main(src, out):
     data = open(src, 'rb').read()
     if not data.startswith(MAGIC):
@@ -43,11 +85,10 @@ def main(src, out):
     folders = {f['id']: f for f in meta.get('folderStructure', [])}
     doc_folders = meta.get('documentFolders', {})
 
-    def folder_path(fid, seen=()):
-        if not fid or fid not in folders or fid in seen:
-            return []
-        f = folders[fid]
-        return folder_path(f.get('parentId'), seen + (fid,)) + [clean(f['name'])]
+    folder_paths = assign_folder_paths(folders)
+
+    def folder_path(fid):
+        return folder_paths.get(fid, [])
 
     os.makedirs(out, exist_ok=True)
     entries = list(re.finditer(rb'FILE:([0-9a-f-]{36})\n', data))
