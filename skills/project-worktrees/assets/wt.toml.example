@@ -1,0 +1,5 @@
+# Optional: merge deliberately into .config/wt.toml after reviewing setup commands.
+# No hook is enabled here. Worktree paths belong in the user configuration.
+#
+# [pre-start]
+# bootstrap = "sh scripts/bootstrap-worktree"

@@ -1,0 +1,68 @@
+name: Project Worktrees
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/project-worktrees/**'
+      - 'evaluation/project-worktrees/**'
+      - '.github/workflows/project-worktrees.yml'
+  pull_request:
+    paths:
+      - 'skills/project-worktrees/**'
+      - 'evaluation/project-worktrees/**'
+      - '.github/workflows/project-worktrees.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    name: Git and Worktrunk (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.11'
+      - name: Fetch pinned Worktrunk release
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "$(uname -s)/$(uname -m)" in
+            Linux/x86_64) wt_target=x86_64-unknown-linux-musl ;;
+            Darwin/arm64) wt_target=aarch64-apple-darwin ;;
+            Darwin/x86_64) wt_target=x86_64-apple-darwin ;;
+            *) printf '%s\n' 'Unsupported CI architecture' >&2; exit 1 ;;
+          esac
+          wt_dir="$RUNNER_TEMP/project-worktrees-tools"
+          mkdir -p "$wt_dir"
+          wt_asset="worktrunk-$wt_target.tar.xz"
+          wt_url="https://github.com/max-sixty/worktrunk/releases/download/v0.82.0/$wt_asset"
+          curl -fLsS --retry 2 --max-time 120 "$wt_url" -o "$wt_dir/$wt_asset"
+          curl -fLsS --retry 2 --max-time 60 "$wt_url.sha256" -o "$wt_dir/$wt_asset.sha256"
+          python3 - "$wt_dir/$wt_asset" <<'PY'
+          import hashlib, pathlib, sys
+          artifact = pathlib.Path(sys.argv[1])
+          expected = pathlib.Path(str(artifact) + '.sha256').read_text().split()[0]
+          actual = hashlib.sha256(artifact.read_bytes()).hexdigest()
+          if actual != expected:
+              raise SystemExit('Worktrunk release checksum mismatch')
+          PY
+          tar -xJf "$wt_dir/$wt_asset" -C "$wt_dir"
+          printf 'WORKTRUNK_TEST_BINARY=%s\n' "$wt_dir/worktrunk-$wt_target/wt" >> "$GITHUB_ENV"
+          git --version
+          python3 --version
+          "$wt_dir/worktrunk-$wt_target/wt" --version
+      - name: Migration preservation and refusal cases
+        run: python3 -I evaluation/project-worktrees/test_migration.py
+      - name: Worktrunk configuration integration
+        run: python3 -I evaluation/project-worktrees/test_worktrunk_config.py

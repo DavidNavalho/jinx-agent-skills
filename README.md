@@ -67,6 +67,30 @@ The repository also retains its earlier evaluated skills:
 | [`kafka-architecture-investigation`](skills/kafka-architecture-investigation/SKILL.md) | Turn Kafka architecture questions into source-backed ADRs, deterministic scenarios, proof harnesses, evidence, reports, and runbooks. |
 | [`sharepoint-video-download`](skills/sharepoint-video-download/SKILL.md) | Save a local `.mp4` of a SharePoint / OneDrive / Stream / Teams recording the user can play, including view-only videos with no Download button, using their own signed-in browser session. |
 | [`lucid-backup-converter`](skills/lucid-backup-converter/SKILL.md) | Convert a Lucidchart / Lucidspark backup (`.laf`) into its original folder tree, with an editable `.drawio`, a PDF and per-page PNGs for every document, using draw.io's open-source Lucid importer in headless Chrome. |
+| [`project-worktrees`](skills/project-worktrees/SKILL.md) | Audit, safely migrate, and verify Git projects into a conventional `main/` + `worktrees/` container, with per-project Worktrunk settings and optional bootstrap. Designed for macOS, zsh, and concurrent agents. |
+
+### Project Worktrees quickstart
+
+Install the complete `skills/project-worktrees/` folder into the target repository's
+`.agents/skills/project-worktrees/` for repository-local Codex use. Preserve an existing
+installation; see the [installation and layout conventions](skills/project-worktrees/references/conventions.md).
+Then ask the local agent:
+
+> Use $project-worktrees to audit this repository and migrate it to the agreed main/ and
+> worktrees/ layout. Keep bootstrap disabled.
+
+The skill preserves the current primary branch, staged/unstaged changes, and untracked/
+ignored content. It creates an external migration plan and journal, refuses unsupported
+states and collisions, and verifies the result. Worktrunk settings are scoped by project
+identifier; bootstrap hooks are optional and disabled by default. The scripts do not stop
+running agents or services: establish quiescence before applying a move.
+
+Requirements: Python 3.11+, Git 2.43+, and Worktrunk 0.81+ for the full workflow. The Git-only
+migration runner supports Git 2.36+. On macOS, install with `brew install worktrunk`;
+zsh integration uses `wt config shell install zsh`.
+
+See the [skill](skills/project-worktrees/SKILL.md), [migration/recovery guide](skills/project-worktrees/references/migration.md),
+and [focused tests](evaluation/project-worktrees/evaluation-results.md).
 
 ## Key features
 
