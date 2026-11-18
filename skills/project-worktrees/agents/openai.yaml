@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Worktrees"
+  short_description: "Safely standardize project worktrees with Worktrunk"
+  default_prompt: "Use $project-worktrees to audit this repository and migrate it to the main/ and worktrees/ layout, with bootstrap setup optional."

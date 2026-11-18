@@ -9,6 +9,31 @@ This is the testing index for every published skill in this repository. It disti
 | `run-agents-in-sbx` | Static/mock lifecycle suite, a 6/6 authenticated live boundary matrix, and a final-semantic 9/9 low-effort fresh-context matrix across three models. | Real auth-refresh, cancellation, and cleanup-failure recovery remain mock-tested only; the model sample is finite and has no no-skill control. |
 | `kafka-local-lab` | Public release baseline passed 12/12 Codex and Claude scenarios on 2026-04-27. | Negative host-failure paths are not all represented in the release matrix. |
 | `kafka-architecture-investigation` | Evaluation ladder phases A-E passed through a deterministic toy autonomous loop on 2026-06-17. | The real Kafka golden path and historical complex benchmark, phases F-G, are pending. |
+| `project-worktrees` | Real-Git migration and real-Worktrunk configuration integration suites; focused macOS/Linux CI. | Interrupted migrations need evidence-guided recovery; process quiescence must be established externally. See the dated results for executed platforms. |
+
+## `project-worktrees`
+
+The [migration suite](evaluation/project-worktrees/test_migration.py) creates disposable Git
+repositories and checks preservation of staged/unstaged, untracked, ignored, binary,
+symlink, and executable content; detached HEADs; relocation from within the moving checkout;
+idempotence; stale plans; collisions; unsupported layouts; and an injected partial failure.
+The [configuration suite](evaluation/project-worktrees/test_worktrunk_config.py) uses a real
+Worktrunk executable to check scoped TOML updates, backups, effective path resolution,
+refusal cases, and disabled CI/LLM/hook execution during verification.
+
+```sh
+python3 -I evaluation/project-worktrees/test_migration.py
+WORKTRUNK_TEST_BINARY=/absolute/path/to/wt \
+  python3 -I evaluation/project-worktrees/test_worktrunk_config.py
+```
+
+Configuration integration cases skip when Worktrunk is unavailable. The
+[focused workflow](.github/workflows/project-worktrees.yml) explicitly downloads a pinned,
+checksum-verified Worktrunk release and runs both suites on macOS and Linux with Python 3.11.
+It needs no user secrets, subscriptions, or development project. It is separate from the
+authenticated sandbox evaluations below.
+
+See [dated results and limits](evaluation/project-worktrees/evaluation-results.md).
 
 ## `run-agents-in-sbx`
 
