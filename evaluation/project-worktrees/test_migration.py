@@ -117,6 +117,10 @@ class MigrationTests(unittest.TestCase):
         self.git(path, "config", "user.name", "Migration Fixture")
         self.git(path, "config", "user.email", "fixture@example.invalid")
         self.git(path, "config", "commit.gpgsign", "false")
+        # Git 2.56+ may start background maintenance after fixture commits.
+        # Keep our disposable repositories quiescent for exact preservation checks.
+        self.git(path, "config", "maintenance.auto", "false")
+        self.git(path, "config", "gc.auto", "0")
         (path / "tracked.txt").write_text("committed\n", encoding="utf-8")
         (path / "binary.dat").write_bytes(bytes(range(256)))
         (path / ".gitignore").write_text(".env\ncache/\n", encoding="utf-8")
@@ -450,6 +454,19 @@ class MigrationTests(unittest.TestCase):
         lock.write_text("fixture-lock\n")
         self.assert_refused(self.plan(ok=False))
         self.assertEqual(lock.read_text(), "fixture-lock\n")
+
+    def test_background_maintenance_markers_are_refused_and_preserved(self):
+        self.init_repo()
+        for relative in ("objects/maintenance.lock", "gc.pid"):
+            with self.subTest(marker=relative):
+                marker = self.repo / ".git" / relative
+                marker.write_text("fixture-background-writer\n")
+                before = self.capture(self.repo)
+                self.assert_refused(self.plan(ok=False))
+                self.assertEqual(self.capture(self.repo), before)
+                self.assertEqual(marker.read_text(), "fixture-background-writer\n")
+                self.assertFalse(self.plan_path.exists())
+                marker.unlink()
 
     def test_in_progress_rebase_is_refused(self):
         self.init_repo()

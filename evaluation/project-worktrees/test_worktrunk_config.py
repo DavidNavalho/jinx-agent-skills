@@ -115,6 +115,8 @@ class WorktrunkConfigTests(unittest.TestCase):
         self.git(self.repo, "config", "user.name", "Worktrunk Fixture")
         self.git(self.repo, "config", "user.email", "fixture@example.invalid")
         self.git(self.repo, "config", "commit.gpgsign", "false")
+        self.git(self.repo, "config", "maintenance.auto", "false")
+        self.git(self.repo, "config", "gc.auto", "0")
         (self.repo / "tracked.txt").write_text("fixture\n", encoding="utf-8")
         self.git(self.repo, "add", "tracked.txt")
         self.git(self.repo, "commit", "--quiet", "-m", "Fixture initial commit")

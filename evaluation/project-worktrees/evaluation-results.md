@@ -4,7 +4,7 @@
 
 | Check | Executed result | Environment |
 | --- | --- | --- |
-| Real-Git migration suite | **38/38 passed** | Linux, Git 2.52.0, Python 3.12.14 |
+| Real-Git migration suite | **39/39 passed** | Linux, Git 2.52.0, Python 3.12.14 |
 | Real-Worktrunk configuration suite | **19/19 passed** | Same host; official Worktrunk 0.82.0 release, SHA-256 checked |
 | Skill metadata validation | Passed | Skill creator's `quick_validate.py` |
 | Script syntax, YAML, relative skill links | Passed | Python AST/YAML parsing, sh and zsh syntax checks |
@@ -15,6 +15,14 @@ The local checks above were run on Linux. The [focused CI workflow](../../.githu
 runs both suites on `macos-latest` and `ubuntu-latest` with Python 3.11 and pinned Worktrunk
 0.82.0. Refer to the pull request's checks or workflow run for executed CI-platform results;
 the existence of the workflow alone is not evidence of a macOS pass.
+
+Initial macOS CI exercised Git 2.56.1 and exposed a fixture race: automatic background
+maintenance removed an ephemeral nested-repository lock between two preservation captures.
+The fixture setup now disables automatic maintenance and auto-GC in its disposable repos;
+the preservation assertions remain unchanged. The workflow tests pull requests and pushes
+to `main`, avoiding duplicate branch-push and pull-request runs for the same candidate.
+The production preflight also explicitly refuses object-maintenance locks and GC PID
+markers instead of assuming a foreground Git command's exit means all writers stopped.
 
 ## What the tests establish
 

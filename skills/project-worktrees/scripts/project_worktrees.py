@@ -306,6 +306,11 @@ def audit(repo: Path, own_lock: bool = False) -> dict:
             blockers.append("Nested registered worktrees need a separate migration")
     if len({key(str(p)) for p in paths}) != len(paths):
         blockers.append("Worktree paths collide after Unicode normalization/case folding")
+    # Object storage is intentionally not traversed below, but these known
+    # markers can identify a background writer after a foreground Git command exits.
+    for marker in (common / "objects" / "maintenance.lock", common / "gc.pid"):
+        if lexists(marker):
+            blockers.append(f"Git background maintenance needs its owner's attention: {marker}")
     for directory, dirs, names in os.walk(common, followlinks=False):
         # Lock files anywhere under shared/per-worktree metadata can identify
         # an active Git operation. Do not follow object alternates or symlinks.
